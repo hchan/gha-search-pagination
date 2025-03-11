@@ -1,0 +1,6 @@
+name: gha-search-pagination
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - nodejs=20.17.0
