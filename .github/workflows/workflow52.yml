@@ -1,0 +1,16 @@
+name: Hello World Workflow
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Say Hello
+      run: echo "From workflow52.yml" >> $GITHUB_STEP_SUMMARY
