@@ -13,4 +13,4 @@ jobs:
     steps:
 
     - name: Say Hello
-      run: echo "From workflow1.yml"
+      run: echo "From workflow1.yml" >> $GITHUB_STEP_SUMMARY
