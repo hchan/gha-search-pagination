@@ -59,6 +59,38 @@ jobs:
           conda env list
           conda list
           npm -v
+      - name: Create workflow and metadata JSON
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+
+            const workflowsDir = path.join(__dirname, '.github', 'workflows');
+            const files = fs.readdirSync(workflowsDir);
+
+            const workflowJson = [];
+
+            files.forEach((file) => {
+              if (path.extname(file) === '.yml') {
+                const filePath = path.join(workflowsDir, file);
+                const contents = fs.readFileSync(filePath, 'utf8');
+                workflowJson.push({ name: file, contents });
+              }
+            });
+
+            const workflowJsonString = JSON.stringify(workflowJson, null, 2);
+            fs.writeFileSync('workflows.json', workflowJsonString);
+
+            const metadataJson = {
+              name: 'Remix Search Pagination',
+              description: 'Remix Search Pagination',
+              date: Date.now(),
+              generator: 'gh-pages.yml',
+            };
+
+            const metadataJsonString = JSON.stringify(metadataJson, null, 2);
+            fs.writeFileSync('metadata.json', metadataJsonString);  
+          "
       - name: Remix Cache
         uses: actions/cache@v4
         id: remix-cache
