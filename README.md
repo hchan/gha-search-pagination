@@ -1,6 +1,6 @@
 # A Showcase of How to Search for Workflows in GHA
 
-The [`gh-pages.yml`](.github/workflows/gh-pages.yaml) will run on any push to the `main` branch in the `.github/workflows` directory.  
+The [`gh-pages.yml`](.github/workflows/gh-pages.yml) will run on any push to the `main` branch in the `.github/workflows` directory.  
 This action will update the following files:
 - [`workflows.json`](https://hchan.github.io/gha-search-pagination/workflows.json)
 - [`metadata.json`](https://hchan.github.io/gha-search-pagination/metadata.json)
