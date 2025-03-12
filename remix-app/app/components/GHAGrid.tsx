@@ -1,6 +1,4 @@
-"use client";
 import React from "react";
-import { useState, useEffect } from "react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 // React Data Grid Component
 import { ColDef, ICellRendererParams } from "ag-grid-community";
@@ -13,24 +11,25 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 interface GHAGridProps {
   workflows: Workflow[]; // Prop to receive workflows array
 }
+
 export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
   const colDefs: ColDef<Workflow>[] = [
-    { field: "filename", headerName: "Filename" },
-    { field: "name", headerName: "Name" },
-    { field: "description", headerName: "Description" },
-    { field: "contents", headerName: "Contents" },
+    { field: "filename", headerName: "Filename", flex: 3 },  // 30% of total width
+    { field: "name", headerName: "Name", flex: 3 },  // 30% of total width
+    { field: "description", headerName: "Description", flex: 3 },  // 30% of total width
     {
       field: "pin",
       headerName: "Favorite",
       cellRenderer: (params: ICellRendererParams<Workflow>) => {
-        // Explicitly type the 'params' as ICellRendererParams with Workflow
-        return params.value ? "⭐" : "☆"; // Render '⭐' or '☆' based on the boolean value
+        return params.value ? "⭐" : "☆";
       },
+      flex: 1,  // 10% of total width
     },
   ];
+
   return (
     // set a height on the parent div because the grid fills the available space
-    <div className="h-screen w-full ag-theme-alpine">
+    <div className="ag-theme-alpine" style={{ height: "100%", width: "100%" }}>
       <AgGridReact rowData={workflows} columnDefs={colDefs} />
     </div>
   );
