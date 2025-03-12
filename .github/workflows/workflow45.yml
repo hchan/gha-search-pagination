@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths: 
+      - .github/workflows/workflow45.yml
   workflow_dispatch:
 
 jobs:
