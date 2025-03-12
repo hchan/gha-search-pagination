@@ -4,7 +4,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 
 export default defineConfig({
-  base: "/gha-search-pagination/build/client",
+  base: "/gha-search-pagination/build/client/",
   plugins: [
     remix({
       // https://remix.run/docs/en/main/guides/spa-mode
