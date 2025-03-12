@@ -18,6 +18,7 @@ export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
     { field: "filename", headerName: "Filename" },
     { field: "name", headerName: "Name" },
     { field: "description", headerName: "Description" },
+    { field: "contents", headerName: "Contents" },
     {
       field: "pin",
       headerName: "Favorite",
