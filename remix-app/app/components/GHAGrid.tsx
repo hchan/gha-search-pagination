@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
-import { ColDef, ICellRendererParams } from "ag-grid-community";
+import { ColDef, ICellRendererParams, ColumnState, GridReadyEvent } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Workflow } from "~/data/Workflow"; // ✅ Import Workflow type
+
 // Register all Community features
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -31,12 +32,21 @@ export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
     return params.data;
   };
 
+  const onGridReady = useCallback((params: GridReadyEvent) => {
+
+    const defaultSortModel: ColumnState[] = [
+      { colId: "pin", sort: "asc", sortIndex: 1 },
+    ];
+    params.api.applyColumnState({ state: defaultSortModel });
+  }, []);
+
   const colDefs: ColDef<Workflow>[] = [
     {
       field: "filename",
       headerName: "Filename",
       flex: 5,
       filter: true, // Enable filtering for this column
+      sort: "asc",
       cellRenderer: (params: ICellRendererParams<Workflow>) => {
         const baseUrl = "https://github.com/hchan/gha-search-pagination";
         return (
@@ -78,6 +88,7 @@ export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
       field: "pin",
       headerName: "Favorite",
       valueGetter: rowDataGetter,
+      sortable: true,
       cellRenderer: (params: ICellRendererParams<Workflow>) => {
         // Safely access filename using optional chaining
         const filename = params.data?.filename; // This prevents the error by checking if params.data is defined
@@ -95,6 +106,31 @@ export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
         );
       },
       flex: 1,
+      comparator: (a, b, nodeA, nodeB, isInverted) => {
+        // Ensure that nodeA.data and nodeB.data are defined
+        const dataA = nodeA.data ?? { filename: "" };
+        const dataB = nodeB.data ?? { filename: "" };
+
+        // Compare favorite status (starred) first
+        const favoriteA = favorites[dataA.filename] ? 1 : 0;
+        const favoriteB = favorites[dataB.filename] ? 1 : 0;
+
+        if (favoriteA !== favoriteB) {
+          return favoriteB - favoriteA; // Sort starred items (1) on top
+        }
+
+        // If favorites are the same, sort by filename
+        const filenameA = dataA.filename.toLowerCase();
+        const filenameB = dataB.filename.toLowerCase();
+
+        if (filenameA < filenameB) {
+          return isInverted ? 1 : -1;
+        }
+        if (filenameA > filenameB) {
+          return isInverted ? -1 : 1;
+        }
+        return 0;
+      },
     },
   ];
 
@@ -107,6 +143,7 @@ export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
         pagination={true} // Optional: Enable pagination for large datasets
         enableCellTextSelection={true} // Optional: Enable text selection in cells
         paginationPageSize={20}
+        onGridReady={onGridReady}
       />
     </div>
   );
