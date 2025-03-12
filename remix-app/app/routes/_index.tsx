@@ -36,7 +36,7 @@ export default function Index() {
       </header>
 
       {/* Make GHAGrid take full width and be pushed to the bottom */}
-      <div className="flex-1 w-full overflow-hidden">
+      <div >
         <GHAGrid workflows={workflows} />
       </div>
     </div>
