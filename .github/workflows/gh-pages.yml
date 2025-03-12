@@ -59,6 +59,22 @@ jobs:
           conda env list
           conda list
           npm -v
+      - name: Remix Cache
+        uses: actions/cache@v4
+        id: remix-cache
+        env:
+          # Increase this value to reset cache if environment.yml has not changed
+          CACHE_NUMBER: 1
+        with:
+          path: |
+            remix-app/node_modules
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('remix-app/package.json') }}
+      - name: Build Remix App
+        working-directory: remix-app
+        run: |
+          npm install
+          npm run build
       - name: Create workflow and metadata JSON
         run: |
           node -e "
@@ -77,9 +93,9 @@ jobs:
                 workflowJson.push({ name: file, contents });
               }
             });
-
+            clientDir = path.join(__dirname, 'remix-app', 'build', 'client');
             const workflowJsonString = JSON.stringify(workflowJson, null, 2);
-            fs.writeFileSync('workflows.json', workflowJsonString);
+            fs.writeFileSync(clientDir + '/workflows.json', workflowJsonString);
 
             const metadataJson = {
               name: 'Remix Search Pagination',
@@ -89,24 +105,8 @@ jobs:
             };
 
             const metadataJsonString = JSON.stringify(metadataJson, null, 2);
-            fs.writeFileSync('metadata.json', metadataJsonString);  
+            fs.writeFileSync(clientDir + '/metadata.json', metadataJsonString);  
           "
-      - name: Remix Cache
-        uses: actions/cache@v4
-        id: remix-cache
-        env:
-          # Increase this value to reset cache if environment.yml has not changed
-          CACHE_NUMBER: 1
-        with:
-          path: |
-            remix-app/node_modules
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('remix-app/package.json') }}
-      - name: Build Remix App
-        working-directory: remix-app
-        run: |
-          npm install
-          npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
