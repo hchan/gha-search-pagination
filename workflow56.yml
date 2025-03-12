@@ -1,0 +1,18 @@
+
+name: OpJvKH2s2O Workflow
+description: This is a simple workflow UvlXa6qeS8jukghWLDvZ
+on:
+  push:
+    branches:
+      - main
+    paths: 
+      - .github/workflows/workflow56.yml
+  workflow_dispatch:
+
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Say Hello
+      run: echo "From workflow56.yml" >> $GITHUB_STEP_SUMMARY

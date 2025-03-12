@@ -90,7 +90,8 @@ jobs:
               if (path.extname(file) === '.yml') {
                 const filePath = path.join(workflowsDir, file);
                 const contents = fs.readFileSync(filePath, 'utf8');
-                workflowJson.push({ name: file, contents });
+
+                workflowJson.push({ filename: file, name: name, description: description, contents });
               }
             });
             clientDir = path.join(__dirname, 'remix-app', 'build', 'client');

@@ -19,10 +19,10 @@ export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
     { field: "description", headerName: "Description" },
     {
       field: "pin",
-      headerName: "Pinned",
+      headerName: "Favorite",
       cellRenderer: (params: ICellRendererParams<Workflow>) => {
         // Explicitly type the 'params' as ICellRendererParams with Workflow
-        return params.value ? "✅" : "❌"; // Render '✅' or '❌' based on the boolean value
+        return params.value ? "⭐" : "☆"; // Render '⭐' or '☆' based on the boolean value
       },
     },
   ];
