@@ -67,7 +67,7 @@ jobs:
           CACHE_NUMBER: 1
         with:
           path: |
-            remix-app/node_modules
+            **/node_modules
           key:
             ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('remix-app/package.json') }}
       - name: Build Remix App
@@ -77,6 +77,7 @@ jobs:
           npm run build
       - name: Create workflow and metadata JSON
         run: |
+          npm install yaml
           node -e "
             const fs = require('fs');
             const path = require('path');
