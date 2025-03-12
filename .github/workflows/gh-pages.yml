@@ -67,7 +67,7 @@ jobs:
           CACHE_NUMBER: 1
         with:
           path: |
-            '**/node_modules'
+            remix-app/node_modules
           key:
             ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('remix-app/package.json') }}
       - name: Build Remix App
