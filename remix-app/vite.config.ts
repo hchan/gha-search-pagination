@@ -4,9 +4,10 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 
 export default defineConfig({
-  root: "/gha-search-pagination/",
+  base: "/gha-search-pagination/",
   plugins: [
     remix({
+      basename: "/gha-search-pagination/",
       // https://remix.run/docs/en/main/guides/spa-mode
       ssr: false,
       future: {
