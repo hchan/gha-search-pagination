@@ -90,7 +90,7 @@ jobs:
               if (path.extname(file) === '.yml') {
                 const filePath = path.join(workflowsDir, file);
                 const contents = fs.readFileSync(filePath, 'utf8');
-
+                const { name, description } = yaml.parse(contents);
                 workflowJson.push({ filename: file, name: name, description: description, contents });
               }
             });
