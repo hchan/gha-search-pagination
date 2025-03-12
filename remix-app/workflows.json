@@ -1,406 +1,508 @@
 [
   {
-    "name": "gh-pages.yml",
-    "contents": "name: Deploy to GitHub Pages\n\non:\n  push:\n    branches:\n      - main\n    paths:\n      - 'remix-app/**'\n      - '.github/workflows/**'\n  \n  workflow_dispatch:\n\n# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages\npermissions:\n  contents: read\n  pages: write\n  id-token: write\n\n# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.\n# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.\nconcurrency:\n  group: \"pages\"\n  cancel-in-progress: false\n\njobs:\n  # Single deploy job since we're just deploying\n  deploy:\n    environment:\n      name: github-pages\n      url: ${{ steps.deployment.outputs.page_url }}\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout\n        uses: actions/checkout@v4\n      - name: Cache conda\n        uses: actions/cache@v4\n        id: cache\n        env:\n          # Increase this value to reset cache if environment.yml has not changed\n          CACHE_NUMBER: 1\n        with:\n          path: |\n            ~/conda_pkgs_dir\n            /usr/share/miniconda\n          key:\n            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{\n            hashFiles('environment.yml') }}\n    \n      - name: Set up Anaconda\n        uses: conda-incubator/setup-miniconda@v3\n        with:\n          auto-update-conda: true\n          activate-environment: gh-search-pagination\n          environment-file: environment.yml\n          use-only-tar-bz2: false\n  \n      - name: Debug Environment\n        run: |\n          conda env list\n          conda list\n          npm -v\n      - name: Remix Cache\n        uses: actions/cache@v4\n        id: remix-cache\n        env:\n          # Increase this value to reset cache if environment.yml has not changed\n          CACHE_NUMBER: 1\n        with:\n          path: |\n            remix-app/node_modules\n          key:\n            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('remix-app/package.json') }}\n      - name: Build Remix App\n        working-directory: remix-app\n        run: |\n          npm install\n          npm run build\n      - name: Create workflow and metadata JSON\n        run: |\n          node -e \"\n            const fs = require('fs');\n            const path = require('path');\n\n            const workflowsDir = path.join(__dirname, '.github', 'workflows');\n            const files = fs.readdirSync(workflowsDir);\n\n            const workflowJson = [];\n\n            files.forEach((file) => {\n              if (path.extname(file) === '.yml') {\n                const filePath = path.join(workflowsDir, file);\n                const contents = fs.readFileSync(filePath, 'utf8');\n                workflowJson.push({ name: file, contents });\n              }\n            });\n            clientDir = path.join(__dirname, 'remix-app', 'build', 'client');\n            const workflowJsonString = JSON.stringify(workflowJson, null, 2);\n            fs.writeFileSync(clientDir + '/workflows.json', workflowJsonString);\n\n            const metadataJson = {\n              name: 'Remix Search Pagination',\n              description: 'Remix Search Pagination',\n              date: Date.now(),\n              generator: 'gh-pages.yml',\n            };\n\n            const metadataJsonString = JSON.stringify(metadataJson, null, 2);\n            fs.writeFileSync(clientDir + '/metadata.json', metadataJsonString);  \n          \"\n      - name: Setup Pages\n        uses: actions/configure-pages@v5\n      - name: Upload artifact\n        uses: actions/upload-pages-artifact@v3\n        with:\n          path: \"remix-app/build/client\"\n      - name: Deploy to GitHub Pages\n        id: deployment\n        uses: actions/deploy-pages@v4\n"
+    "filename": "gh-pages.yml",
+    "name": "Deploy to GitHub Pages",
+    "contents": "name: Deploy to GitHub Pages\n\non:\n  push:\n    branches:\n      - main\n    paths:\n      - 'remix-app/**'\n      - '.github/workflows/**'\n  \n  workflow_dispatch:\n\n# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages\npermissions:\n  contents: read\n  pages: write\n  id-token: write\n\n# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.\n# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.\nconcurrency:\n  group: \"pages\"\n  cancel-in-progress: false\n\njobs:\n  # Single deploy job since we're just deploying\n  deploy:\n    environment:\n      name: github-pages\n      url: ${{ steps.deployment.outputs.page_url }}\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout\n        uses: actions/checkout@v4\n      - name: Cache conda\n        uses: actions/cache@v4\n        id: cache\n        env:\n          # Increase this value to reset cache if environment.yml has not changed\n          CACHE_NUMBER: 1\n        with:\n          path: |\n            ~/conda_pkgs_dir\n            /usr/share/miniconda\n          key:\n            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{\n            hashFiles('environment.yml') }}\n    \n      - name: Set up Anaconda\n        uses: conda-incubator/setup-miniconda@v3\n        with:\n          auto-update-conda: true\n          activate-environment: gh-search-pagination\n          environment-file: environment.yml\n          use-only-tar-bz2: false\n  \n      - name: Debug Environment\n        run: |\n          conda env list\n          conda list\n          npm -v\n      - name: Remix Cache\n        uses: actions/cache@v4\n        id: remix-cache\n        env:\n          # Increase this value to reset cache if environment.yml has not changed\n          CACHE_NUMBER: 1\n        with:\n          path: |\n            **/node_modules\n          key:\n            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('remix-app/package.json') }}\n      - name: Build Remix App\n        working-directory: remix-app\n        run: |\n          npm install\n          npm run build\n      - name: Create workflow and metadata JSON\n        run: |\n          npm install yaml\n          node -e \"\n            const fs = require('fs');\n            const path = require('path');\n            const yaml = require('yaml');\n            const workflowsDir = path.join(__dirname, '.github', 'workflows');\n            const files = fs.readdirSync(workflowsDir);\n\n            const workflowJson = [];\n\n            files.forEach((file) => {\n              if (path.extname(file) === '.yml') {\n                const filePath = path.join(workflowsDir, file);\n                const contents = fs.readFileSync(filePath, 'utf8');\n                const { name, description } = yaml.parse(contents);\n                workflowJson.push({ filename: file, name: name, description: description, contents });\n              }\n            });\n            clientDir = path.join(__dirname, 'remix-app', 'build', 'client');\n            const workflowJsonString = JSON.stringify(workflowJson, null, 2);\n            fs.writeFileSync(clientDir + '/workflows.json', workflowJsonString);\n\n            const metadataJson = {\n              name: 'Remix Search Pagination',\n              description: 'Remix Search Pagination',\n              date: Date.now(),\n              generator: 'gh-pages.yml',\n            };\n\n            const metadataJsonString = JSON.stringify(metadataJson, null, 2);\n            fs.writeFileSync(clientDir + '/metadata.json', metadataJsonString);  \n          \"\n      - name: Setup Pages\n        uses: actions/configure-pages@v5\n      - name: Upload artifact\n        uses: actions/upload-pages-artifact@v3\n        with:\n          path: \"remix-app/build/client\"\n      - name: Deploy to GitHub Pages\n        id: deployment\n        uses: actions/deploy-pages@v4\n"
   },
   {
-    "name": "workflow1.yml",
-    "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow1.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow1.yml\" >> $GITHUB_STEP_SUMMARY"
+    "filename": "workflow1.yml",
+    "name": "RANDOM_NAME Workflow",
+    "description": "This is a simple workflow RANDOM_DESCRIPTION",
+    "contents": "name: RANDOM_NAME Workflow\ndescription: This is a simple workflow RANDOM_DESCRIPTION\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow1.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow1.yml\" >> $GITHUB_STEP_SUMMARY"
   },
   {
-    "name": "workflow10.yml",
+    "filename": "workflow10.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow10.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow10.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow100.yml",
+    "filename": "workflow100.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow100.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow100.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow11.yml",
+    "filename": "workflow11.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow11.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow11.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow12.yml",
+    "filename": "workflow12.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow12.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow12.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow13.yml",
+    "filename": "workflow13.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow13.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow13.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow14.yml",
+    "filename": "workflow14.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow14.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow14.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow15.yml",
+    "filename": "workflow15.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow15.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow15.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow16.yml",
+    "filename": "workflow16.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow16.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow16.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow17.yml",
+    "filename": "workflow17.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow17.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow17.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow18.yml",
+    "filename": "workflow18.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow18.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow18.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow19.yml",
+    "filename": "workflow19.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow19.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow19.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow2.yml",
+    "filename": "workflow2.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow2.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow2.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow20.yml",
+    "filename": "workflow20.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow20.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow20.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow21.yml",
+    "filename": "workflow21.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow21.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow21.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow22.yml",
+    "filename": "workflow22.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow22.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow22.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow23.yml",
+    "filename": "workflow23.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow23.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow23.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow24.yml",
+    "filename": "workflow24.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow24.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow24.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow25.yml",
+    "filename": "workflow25.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow25.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow25.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow26.yml",
+    "filename": "workflow26.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow26.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow26.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow27.yml",
+    "filename": "workflow27.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow27.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow27.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow28.yml",
+    "filename": "workflow28.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow28.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow28.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow29.yml",
+    "filename": "workflow29.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow29.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow29.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow3.yml",
+    "filename": "workflow3.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow3.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow3.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow30.yml",
+    "filename": "workflow30.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow30.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow30.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow31.yml",
+    "filename": "workflow31.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow31.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow31.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow32.yml",
+    "filename": "workflow32.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow32.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow32.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow33.yml",
+    "filename": "workflow33.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow33.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow33.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow34.yml",
+    "filename": "workflow34.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow34.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow34.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow35.yml",
+    "filename": "workflow35.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow35.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow35.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow36.yml",
+    "filename": "workflow36.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow36.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow36.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow37.yml",
+    "filename": "workflow37.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow37.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow37.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow38.yml",
+    "filename": "workflow38.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow38.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow38.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow39.yml",
+    "filename": "workflow39.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow39.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow39.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow4.yml",
+    "filename": "workflow4.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow4.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow4.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow40.yml",
+    "filename": "workflow40.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow40.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow40.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow41.yml",
+    "filename": "workflow41.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow41.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow41.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow42.yml",
+    "filename": "workflow42.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow42.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow42.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow43.yml",
+    "filename": "workflow43.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow43.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow43.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow44.yml",
+    "filename": "workflow44.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow44.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow44.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow45.yml",
+    "filename": "workflow45.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow45.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow45.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow46.yml",
+    "filename": "workflow46.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow46.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow46.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow47.yml",
+    "filename": "workflow47.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow47.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow47.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow48.yml",
+    "filename": "workflow48.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow48.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow48.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow49.yml",
+    "filename": "workflow49.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow49.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow49.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow5.yml",
+    "filename": "workflow5.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow5.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow5.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow50.yml",
+    "filename": "workflow50.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow50.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow50.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow51.yml",
+    "filename": "workflow51.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow51.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow51.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow52.yml",
+    "filename": "workflow52.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow52.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow52.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow53.yml",
+    "filename": "workflow53.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow53.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow53.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow54.yml",
+    "filename": "workflow54.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow54.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow54.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow55.yml",
+    "filename": "workflow55.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow55.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow55.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow56.yml",
+    "filename": "workflow56.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow56.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow56.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow57.yml",
+    "filename": "workflow57.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow57.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow57.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow58.yml",
+    "filename": "workflow58.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow58.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow58.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow59.yml",
+    "filename": "workflow59.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow59.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow59.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow6.yml",
+    "filename": "workflow6.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow6.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow6.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow60.yml",
+    "filename": "workflow60.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow60.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow60.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow61.yml",
+    "filename": "workflow61.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow61.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow61.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow62.yml",
+    "filename": "workflow62.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow62.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow62.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow63.yml",
+    "filename": "workflow63.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow63.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow63.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow64.yml",
+    "filename": "workflow64.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow64.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow64.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow65.yml",
+    "filename": "workflow65.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow65.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow65.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow66.yml",
+    "filename": "workflow66.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow66.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow66.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow67.yml",
+    "filename": "workflow67.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow67.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow67.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow68.yml",
+    "filename": "workflow68.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow68.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow68.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow69.yml",
+    "filename": "workflow69.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow69.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow69.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow7.yml",
+    "filename": "workflow7.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow7.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow7.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow70.yml",
+    "filename": "workflow70.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow70.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow70.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow71.yml",
+    "filename": "workflow71.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow71.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow71.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow72.yml",
+    "filename": "workflow72.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow72.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow72.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow73.yml",
+    "filename": "workflow73.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow73.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow73.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow74.yml",
+    "filename": "workflow74.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow74.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow74.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow75.yml",
+    "filename": "workflow75.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow75.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow75.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow76.yml",
+    "filename": "workflow76.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow76.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow76.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow77.yml",
+    "filename": "workflow77.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow77.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow77.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow78.yml",
+    "filename": "workflow78.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow78.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow78.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow79.yml",
+    "filename": "workflow79.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow79.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow79.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow8.yml",
+    "filename": "workflow8.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow8.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow8.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow80.yml",
+    "filename": "workflow80.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow80.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow80.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow81.yml",
+    "filename": "workflow81.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow81.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow81.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow82.yml",
+    "filename": "workflow82.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow82.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow82.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow83.yml",
+    "filename": "workflow83.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow83.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow83.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow84.yml",
+    "filename": "workflow84.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow84.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow84.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow85.yml",
+    "filename": "workflow85.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow85.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow85.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow86.yml",
+    "filename": "workflow86.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow86.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow86.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow87.yml",
+    "filename": "workflow87.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow87.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow87.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow88.yml",
+    "filename": "workflow88.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow88.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow88.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow89.yml",
+    "filename": "workflow89.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow89.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow89.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow9.yml",
+    "filename": "workflow9.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow9.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow9.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow90.yml",
+    "filename": "workflow90.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow90.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow90.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow91.yml",
+    "filename": "workflow91.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow91.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow91.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow92.yml",
+    "filename": "workflow92.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow92.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow92.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow93.yml",
+    "filename": "workflow93.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow93.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow93.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow94.yml",
+    "filename": "workflow94.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow94.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow94.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow95.yml",
+    "filename": "workflow95.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow95.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow95.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow96.yml",
+    "filename": "workflow96.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow96.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow96.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow97.yml",
+    "filename": "workflow97.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow97.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow97.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow98.yml",
+    "filename": "workflow98.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow98.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow98.yml\" >> $GITHUB_STEP_SUMMARY\n"
   },
   {
-    "name": "workflow99.yml",
+    "filename": "workflow99.yml",
+    "name": "Hello World Workflow",
     "contents": "name: Hello World Workflow\n\non:\n  push:\n    branches:\n      - main\n    paths: \n      - .github/workflows/workflow99.yml\n  workflow_dispatch:\n\njobs:\n  hello_world_job:\n    runs-on: ubuntu-latest\n\n    steps:\n\n    - name: Say Hello\n      run: echo \"From workflow99.yml\" >> $GITHUB_STEP_SUMMARY\n"
   }
 ]

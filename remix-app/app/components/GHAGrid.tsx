@@ -15,6 +15,7 @@ interface GHAGridProps {
 }
 export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
   const colDefs: ColDef<Workflow>[] = [
+    { field: "filename", headerName: "Filename" },
     { field: "name", headerName: "Name" },
     { field: "description", headerName: "Description" },
     {
