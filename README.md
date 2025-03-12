@@ -1,11 +1,21 @@
 # A Showcase of How to Search for Workflows in GHA
 
+## Problem Statement
+In a mono-repo with a hundred plus workflows can be difficult to search and paginate with the default GHA UI
+![ghaWorkflowVeryDifficult.png](ghaWorkflowVeryDifficult.png)
+
+
+## Soln
+Present a new page via GH Pages that contain a searchable/pageable grid
+![ghaSearchPaginationImproved.png](ghaSearchPaginationImproved.png)
+
+## Implementation Details
 The [`gh-pages.yml`](.github/workflows/gh-pages.yml) will run on any push to the `main` branch in the `.github/workflows` directory.  
 This action will update the following files:
 - [`workflows.json`](https://hchan.github.io/gha-search-pagination/workflows.json)
 - [`metadata.json`](https://hchan.github.io/gha-search-pagination/metadata.json)
 
-These files will then be used to generate a RemixJS UI that helps search for workflows.
+These files will will be used in conjuction with a [`RemixJS App`](remix-app/) that helps search for workflows.
 
 ## GitHub Actions Search and Pagination
 
