@@ -17,8 +17,7 @@ This action will update the following files:
 
 These files will will be used in conjuction with a [`RemixJS App`](remix-app/) that helps search for workflows.
 
-## GitHub Actions Search and Pagination
-
+## Demo
 You can access the GitHub Actions Search and Pagination UI [here](https://hchan.github.io/gha-search-pagination/).
 
 ## References
