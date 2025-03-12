@@ -1,8 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
-// React Data Grid Component
 import { ColDef, ICellRendererParams } from "ag-grid-community";
-
 import { AgGridReact } from "ag-grid-react";
 import { Workflow } from "~/data/Workflow"; // ✅ Import Workflow type
 // Register all Community features
@@ -13,12 +11,32 @@ interface GHAGridProps {
 }
 
 export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
+  const [favorites, setFavorites] = useState<{ [key: string]: boolean }>({});
+
+  // Load favorites from localStorage on component mount
+  useEffect(() => {
+    const storedFavorites = localStorage.getItem("favorites");
+    if (storedFavorites) {
+      setFavorites(JSON.parse(storedFavorites));
+    }
+  }, []);
+
+  const toggleFavorite = (filename: string) => {
+    const updatedFavorites = { ...favorites, [filename]: !favorites[filename] };
+    setFavorites(updatedFavorites);
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites)); // Save to localStorage
+  };
+
+  const rowDataGetter = (params: any) => {
+    return params.data;
+  };
+
   const colDefs: ColDef<Workflow>[] = [
     {
       field: "filename",
       headerName: "Filename",
       flex: 5,
-      filter: true, // Enable filtering for this column,
+      filter: true, // Enable filtering for this column
       cellRenderer: (params: ICellRendererParams<Workflow>) => {
         const baseUrl = "https://github.com/hchan/gha-search-pagination";
         return (
@@ -59,8 +77,22 @@ export const GHAGrid: React.FC<GHAGridProps> = ({ workflows }) => {
     {
       field: "pin",
       headerName: "Favorite",
+      valueGetter: rowDataGetter,
       cellRenderer: (params: ICellRendererParams<Workflow>) => {
-        return params.value ? "⭐" : "☆";
+        // Safely access filename using optional chaining
+        const filename = params.data?.filename; // This prevents the error by checking if params.data is defined
+        if (!filename) return null; // If filename is not available, return null (or any fallback)
+
+        const isPinned = favorites[filename] || false; // Default to false if not pinned
+        return (
+          <span
+            onClick={() => toggleFavorite(filename)} // Use the correct filename
+            style={{ cursor: "pointer" }}
+          >
+            {isPinned ? "⭐" : "☆"}{" "}
+            {/* Display filled star if pinned, empty otherwise */}
+          </span>
+        );
       },
       flex: 1,
     },
