@@ -1,5 +1,6 @@
-name: RANDOM_NAME Workflow
-description: This is a simple workflow RANDOM_DESCRIPTION
+
+name: zMGit3346s Workflow
+description: This is a simple workflow C1o15M6FbZIfcXW9xRgW
 on:
   push:
     branches:
@@ -13,6 +14,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     - name: Say Hello
       run: echo "From workflow1.yml" >> $GITHUB_STEP_SUMMARY

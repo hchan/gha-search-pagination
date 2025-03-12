@@ -35,7 +35,7 @@ jobs:
       run: echo "From workflow${index}.yml" >> $GITHUB_STEP_SUMMARY
 `;
 
-  fs.writeFileSync(`workflow${index}.yml`, workflowContent);
+  fs.writeFileSync(`.github/workflows/workflow${index}.yml`, workflowContent);
 };
 
 // Generate workflow2.yml to workflow100.yml

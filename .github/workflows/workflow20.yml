@@ -1,5 +1,6 @@
-name: Hello World Workflow
 
+name: WMm7N3x2XH Workflow
+description: This is a simple workflow 4SlHcjBXyxgfdMDg2rFm
 on:
   push:
     branches:
@@ -13,6 +14,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     - name: Say Hello
       run: echo "From workflow20.yml" >> $GITHUB_STEP_SUMMARY
