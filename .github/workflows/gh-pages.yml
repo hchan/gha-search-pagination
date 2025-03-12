@@ -54,15 +54,30 @@ jobs:
         run: |
           conda env list
           conda list
+          npm -v
+      - name: Remix Cache
+        uses: actions/cache@v4
+        id: remix-cache
+        env:
+          # Increase this value to reset cache if environment.yml has not changed
+          CACHE_NUMBER: 1
+        with:
+          path: |
+            '**/node_modules'
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('remix-app/package.json') }}
+      - name: Build Remix App
+        working-directory: remix-app
+        run: |
+          npm install
+          npm run build
           
-  
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: "remix-app"
+          path: "remix-app/build/client"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
